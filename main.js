@@ -12,10 +12,6 @@ Josh Millard 2015 */
 		in addition to top and left and width/height, to make bounds-checking less of a snarl
 		of additions and shit
 
-	- consider rewriting everything that uses literal strings "left" and "right" to refer to the 
-		current teams as just literally passing references to those teams via a couple of 
-		global variables, to simplify reference language throughout
-
 	- stats, stats, stats
 		- add a larger variety of player/team/league stats that the game can generate to the page
 			and users can look through, if they're the stat-happy sorts.
@@ -710,7 +706,7 @@ function draw_canvas() {
 		resize the context's model of the canvas size and update our scaling factor.
 
 		It would make as much or more sense to handle this through some sort of browser resize event hook instead
-		of manually checking it here, but this works and I'm lazy and so here we are.
+		of manually checking it here, probably, but this works and I'm lazy and so here we are.
 	*/
 
 	var cw = $("#main").width();
@@ -735,8 +731,7 @@ function draw_canvas() {
 	draw_players(players);
 
 	context.save();	// and compensate for having written these non-field bits for scale * 5 canvas coordinates
-	context.scale(0.2, 0.2);
-//	draw_scoreboard();
+	context.scale(0.2, 0.2)
 
 	if(rosterview == "players") {
 		draw_rosters();
@@ -1065,7 +1060,7 @@ function draw_readout() {
 	context.fillStyle = "#cccc00";
 
 	var ls = teams.left.scores.points;
-	var rs = teams.left.scores.points;
+	var rs = teams.right.scores.points;
 	var lsoff = 0;
 	var rsoff = 0;
 	// nudge score digits
