@@ -1,6 +1,7 @@
-Genetic Football
+<a href="http://joshmillard.com/football/">Genetic Football</a>
 
 Josh Millard 2015 -- tweet @joshmillard
+
 
 Genetic Football is an application of the idea of genetic algorithms to a (very simplified) model of American football.  Each football player has a genotype that manifests at player creation time as a phenotype expressing things like limb length and muscle mass, skin pigment, tendency to veer left or right, etc.  
 
