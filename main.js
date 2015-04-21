@@ -27,6 +27,14 @@ Josh Millard 2015 */
 	- rework start-of-play player distribution code to make sure the offensive QB can't literally
 		start the play out of bounds and score a safety
 
+	- for mating and cloning, inheriting a surname from parent would be a nice touch; possibly allow
+		for complicated things like hyphenated surnames and the Jr, III, IV, etc postfix if the
+		offspring takes both first and last name
+
+	- per above, also add parent1 and parent2 fields to players, to track the chain of ancestry
+		back as another potential data-tracking detail
+
+
 */
 
 // our html canvas object
@@ -224,8 +232,40 @@ surnames.italy = "Rossi Russo Ferrari Esposito Bianchi Romano Colombo Ricci Mari
 Rizzo Lombardi Moretti Sante Ravelli";
 surnames.kosovo = "Zogaj Gashi Krasniqi Morina Kelmendi Beqiri Jakupi Kastrati Avdiu Shala Ademi Sejdiu Hoxha";
 surnames.latvia = "Berzins Kalnins Ozolins Jansons Ozols Liepins Krumins Balodis Eglitis Zarins Petersons Vitols Klavins Karklins Vanags";
-surnames.lithuania = "Kazlauskas Petrauskas Jankauskas Stankevicius Vasiliauskas Zukauskas Butkus Paulauskas Urbonas Kavaliauskas";
-//surnames. = "";
+surnames.lithuania = "Kazlauskas Petrauskas Jankauskas Stankevicius Vasiliauskas Zukauskiene Butkiene Paulauskiene Urboniene Kavaliauskiene";
+surnames.malta = "Borg Camilleri Vella Farrugia Zammit Galea Micallef Grech Attard Spiteri";
+surnames.netherlands = "De Jong Jansen De Vries Van den Berg Van Dijk Bakker Janssen Visser Smit Meijer De Boer Mulder De Groot Bos Vos Peters \
+Hendriks Van Leeuwen Dekker Brouwer De Wit Dijkstra Smits De Graaf Van der Meer";
+surnames.norway = "Hansen Johansen Olsen Larsen Andersen Pedersen Nilsen Kristiansen Jensen Karlsen Johnsen Pettersen Eriksen Berg \
+Haugen Hagen Johannessen Andreassen Jacobsen Halvorsen";
+surnames.poland = "Nowak Kowalski Wisniewski Wojcik Kowalczyk Kaminski Lewandowski Zielinski Szymanski Wozniak Dabrowski Kozlowski Jankowski \
+Mazur Kwiatkowski Wojciechowski Krawczyk Kaczmarek Piotrowski Grabowski";
+surnames.portugal = "Silva Santos Ferreira Pereira Oliveira Costa Rodrigues Martins Jesus Sousa Fernandes Goncalves Gomes Lopes Marques Alves \
+Almeida Ribeiro Pinto Carvalho Teixeira Moreira Correia Mendes Nunes Soares Vieira Monteiro Cardoso Rocha";
+surnames.romania = "Popa Popescu Pop Radu Dumitru Stan Stoica Gheorghe Matei Ciobanu";
+surnames.russia = "Smirnov Ivanov Kuznetsov Popov Sokolov Lebedev Kozlov Novikov Morozov Petrov Volkov Solovyov Vasilyev Zaytsev Pavlov \
+Semyonov Golubev Vinogradov Bogdanov Vorobyov";
+surnames.slovakia = "Horvath Kovac Varga Toth Nagy Balaz Szabo Molnar Balog Lukac";
+surnames.slovenia = "Novak Horvat Kovacic Krajnc Zupancic Potocnik Kovac Mlakar Kos Vidmar Golob Turk Bozic Kralj Korosec Zupan Bizjak Hribar Kotnik Kavcic";
+surnames.spain = "Diaz Fernandez Gonzalez Rodriguez Lopez Martinez Sanchez Perez Martin Gomez Ruiz Hernandez Jimenez Diaz Alvarez Moreno Munoz Alonso";
+surnames.sweden = "Andersson Johansson Karlsson Nilsson Eriksson Larsson Olsson Persson Svensson Gustafsson Pettersson Jonsson Jansson Hansson \
+Bengtsson Jonsson Lindberg Jakobsson Magnusson Olofsson";
+surnames.turkey = "Yilmaz Kaya Demir Sahin Celik Yildiz Yildirim Ozturk Aydın Ozdemir";
+surnames.ukraine = "Melnyk Shevchenko Boyko Kovalenko Bondarenko Tkachenko Kovalchuk Kravchenko Oliynyk Shevchuk Koval Polishchuk Bondar Tkachuk \
+Moroz Marchenko Lysenko Rudenko Savchenko Petrenko";
+surnames.uk = "Smith Jones Taylor Brown Williams Wilson Johnson Davies Robinson Wright Thompson Evans Walker White Roberts Green Hall Wood Jackson Clarke";
+surnames.argentina = "Fernandez Rodriguez Gonzalez Garcia Lopez Martinez Perez Alvarez Gomez Sanchez Diaz Vasquez Castro Romero \
+Suarez Blanco Ruiz Alonso Torres Dominguez";
+surnames.brazil = "Silva Santos Souza Oliveira Pereira Lima Carvalho Ferreira Rodrigues Almeida Costa Gomes Martins Araujo Melo Barbosa \
+Ribeiro Alves Cardoso Schmitz";
+surnames.chile = "Gonzalez Munoz Rojas Diaz Perez Soto Contreras Silva Martinez Sepulveda Morales Rodriguez Lopez Fuentes Hernandez Torres \
+Araya Flores Espinoza Valenzuela";
+surnames.colombia = "Rodriguez Gomez Gonzalez Martinez Garcia Lopez Hernandez Sanchez Ramirez Perez Diaz Munoz Rojas Moreno Jimenez";
+surnames.paraguay = "Gonzalez Benitez Martinez Lopez Gimenez Vera Duarte Ramirez Villalba Fernandez Gomez Acosta Rojas Ortiz Caceres Rodriguez \
+Ruiz Nunez Ayala Baez";
+surnames.peru = "Quispe Flores Snchez Rodriguez Garcia Rojas Gonzalez Díaz Chavez Torres Ramirez Mendoza Ramos Lopez \
+Castillo Espinoza Vasquez Huaman Perez Vargas";
+
 
 var firstnames = androgynous.split(" ");
 var lastnames = [];
