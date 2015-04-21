@@ -1,0 +1,380 @@
+<html>
+
+<head>
+	<title>Genetic Football</title>
+
+	<style>
+	body {
+		font-family: Futura;
+		width: 95%;
+		margin: auto;
+	}
+	.mono { 
+		font-family: monospace;
+	}
+
+	
+
+	tr, td {
+		text-align: right;
+		margin-left: 20px;
+	}
+	canvas {
+		-moz-user-select: none;
+		-khtml-user-select: none;
+		-webkit-user-select: none;
+	}
+
+	button {
+		padding: 5px 0px 5px 0px;
+		margin: 5px 0px 5px 0px;
+		width: 100%;
+		font-size: 1.2em;
+		font-family: Futura;
+	}
+
+	.statsbutton {
+		width: auto;
+		padding: 5px 10 5px 10px;
+		font-size: 0.9em;
+	}
+
+	#canvasbox {
+		width: 78%;
+		margin: auto;
+		float: left;
+	}
+	#main {
+		width: 100%;
+	}
+
+	#controlsbox {
+		float: right;
+		width: 20%;
+	}
+
+	#playerstatsbox {
+		width: 78%;
+		float: left;
+		margin: 10px 5px 0px 0px;
+	}
+
+	.controlgroup {
+		font-size: 1.2em;
+		text-align: center;
+		margin: 20px 0px 10px 0px;
+		padding: 5px 0px 5px 0px;
+		color: white;
+		background-color: black;
+	}
+	.controlheader {
+		font-size: 0.9em;
+		font-style: italic;
+		margin: 20px 0px 10px 10px;
+	}
+	.controllabel {
+		font-size: 0.8em;
+	}
+	.slider {
+		width: 70%;
+	}
+	.sliderval {
+		width: 30%;
+		font-size: 0.9em;
+		overflow: hidden;
+	}
+
+	ul {
+		list-style-image: url('ball.png');
+	}
+
+	li {
+		padding: 5px 0px 0px 0px;
+		margin-left: 30px;
+	}
+
+	#header {
+		margin: 10px 0px 0px 10px;
+	}
+	#about {
+		font-size: 0.9em;
+		max-width: 800px;
+	}
+
+	.faqq {
+		font-style: italic;
+		font-weight: bold;
+	}
+	.faqa {
+	}
+	.faqa p {
+		margin-left: 20px;
+	}
+	.faqarrow {
+		color: red;
+		font-style: normal;
+		cursor: pointer;
+	}
+
+
+	</style>
+
+</head>
+
+
+<body>
+
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+	<div id="header">
+		<img src="geneticheader.png" alt="genetic"/>
+		<img src="footballheader.png" alt="football"/>
+
+		<h4><i>Genetic Football</i> simulates American football as a <a href="http://en.wikipedia.org/wiki/Genetic_algorithm">genetic algorithm</a>.   Start with a roster of randomly generated nincompoops genetically inclined to run in circles, and use the power of natural selection to evolve (relatively) competent squads of footballers.  Watch it play out in real time, or simulate hundreds of games at a go.  Confused?  Read "how it works", below.</h4>
+		<h4><i>Genetic Football</i> was written by Josh Millard; you can reach him on twitter <a href="http://twitter.com/joshmillard">@joshmillard</a>.</h4>
+	</div>
+
+	<div id="canvasbox">
+
+		<div id="about">
+
+			<div>
+				<span class="faqq">How it works &mdash; details on the controls &mdash; FAQ</span> 
+				<span class="faqarrow" id="howshow" onclick="how.hidden=false; howhide.hidden=false; this.hidden=true">&darr; show</span>
+				<span class="faqarrow" id="howhide" hidden="true" onclick="how.hidden=true; howhide.hidden=true; howshow.hidden=false">&uarr; hide</span>
+			</div>
+
+			<div class="faqa" id="how" hidden="true">
+				<h2>Why are the players so terrible at football?</h2>
+				<p>
+					These little football players are really, really dumb; they don't just have <i>bad</i> player AI, they have none whatsover.  They have <i>no</i> knowledge of the rules of football; they have no awareness of other players; they are incapable of making decisions from moment to moment about what to do.  They don't know that they want to score touchdowns or tackle quarterbacks; they just run blindly in variously-sized circles as fast as they variously can, according to what their genes have to say about how they're physically built.
+				</p>  
+				<p>
+					That's the beautiful thing about genetic algorithms: if you set up the rules for rewarding good behavior correctly, you can let a bunch of randomly generated circlular idiots breed for a hundred generations and something resembling football emerges.
+				</p>
+
+				<h2>The Basic Idea</h2>
+				<p>
+					Genetic algorithms are a way of using the ideas of fitness (as in <a href="http://en.wikipedia.org/wiki/Survival_of_the_fittest">survival of the fittest</a>) and selection (as in <a href="http://en.wikipedia.org/wiki/Natural_selection">natural selection</a>) to model the behavior of a system in a computer program.  By coming up with a way to judge how well a member of a population is doing (a "fitness function") and using the relative fitness of different members of the population to decide who succeeds (that is, survives or successfully mates or doesn't get fired from their football team) and who fails (dies without mating, gets kicked out of the league), we can use only the genes of the more successful members of the population to create new members of the population.  As the process repeats, the selection pressure of the environment causes a slow evolution of the overall genetic makeup of the population as successful genes propogate and unsuccessful ones disappear.
+				</p>
+				<p>
+					<i>Genetic Football</i> runs with that idea in the following way:
+				</p>
+				<ol>
+					<li>Each simulated football player starts each play facing in a specific direction, runs forward at a specific speed, and curves left or right at a specific rate, all determined by their genetic code.</li>
+					<li>Genes are modeled as small numeric values representing things like limb length and strength, torso size, skin pigment, and so on.  Players generated at start of a new league have randomly generated genes.</li>
+					<li>As a result of their genetically determined behavior, players will perform varyingly well, ideally making tackles and running the ball forward and scoring touchdowns, but possibly just running in circles or backwards or getting sacked.  Players get scored after each play on what they did.</li>
+					<li>After some number of games, each team will fire some proportion of its worst players, and replace them with new ones, through some mix of cloning an existing player, breeding a new hybrid player from two existing players, and spawing a totally random new player.</li>
+					<li>As time passes, low-performing players will be eliminated from the genetic pool while high-performing players will be used as genetic source material for new players, thus passing on their relatively successful football genes.</li>
+				</ol>
+
+
+				<h2>The Controls:</h2>
+				<ul>
+					<h3>Time</h3>
+					<li><i>Pause</i> &mdash; freeze and unfreeze the simulation.  Handy for taking a closer look at players and stats.</li>
+					<li><i>Turbo</i> &mdash; toggles higher-speed processing of the real-time simulation.  How much turbo will actually speed things up depends on your computing device &mdash; desktops/laptops will likely see more speed-up than mobile devices.</li>
+					<li><i>Skip Games</i> &mdash; cease all visual aspects of the simulation temporarily to process a given number of simulated games as quickly as possible before returning to normal simulation.  Very handy for seeing how tweaks to genetic selection and fitness metrics affect a league over the long term.</li>
+					<li><i># of games to skip</i> &mdash; set the total number of games that Skip Games will calculate before returning to normal simulation.</i></li>
+					<p>(Note: the page will be essentially unresponsive during the skipping process; how long it lasts will, like with Turbo, depend on the speed of your device, and on how many games you're skipping at a time.  Experiment with smaller numbers of games and/or shorter league game lengths to figure out what works for you.)</li></p>
+
+					<h3>View</h3>
+					<li><i>Switch roster type</i> &mdash; toggle the display of team information in the simulation's drawing canvas between a graphic-centric portrait of each team's players and a stats-centric view with tiny player portraits and detailed career statistics.</li> 
+
+					<h3>League</h3>
+					<p>Note that none of the League controls will have any effect until the "Start new league" button is pressed.</p>
+					<li><i># of teams</i> &mdash; set the total number of teams in the next league you start.</li>
+					<li><i>players on team</i> &mdash; set the number of players per team in the next league you start.</li>
+					<li><i>game length in secs</i> &mdash; set the time allotted for each game in the next league you start.</li>
+					<li><i>Start new league</i> &mdash; reset the simulation with a newly generated set of teams and players based on the controls above.  </li>
+
+					<h3>Genetic Selection</h3>
+					<h4>* firing strategy</h4>
+					<li><i>games between firings</i> &mdash; a team will fire its lowest-performing players after it finishes playing this fixed number of games.  Lower values will lead to quicker turnover of underperforming players; larger values will give players more of a chance to establish average performance vs. one or two particularly lucky or unlucky outings.</li>
+					<li><i>% of players to fire</i> &mdash; when a team fires players, it'll fire this percent (rounded up) of its players, ranked by average per-game performance since being hired.  Setting this to 0% will keep team rosters completely static; setting it to 100% will get produce a completely random new team after every firing cycle.</li>
+
+					<h4>* breeding strategy</h4>
+					<p>The following three proportion controls are taken as a group and divvied up based on the ratio of the three values; they do not need to add up to 100, you can distribute them relative to one another however you prefer.  If you set all three to zero, the simulation will default to producing random players during the firing/hiring process.</p>
+					<li><i>proportion of cloning</i> &mdash; proportion of newly hired players who will be genetic clones of one of the non-fired team members.  (If the team has fired all of its players, a random player will be generated instead of a clone.)</li>
+					<li><i>proportion of mating</i> &mdash; proportion of newly hired players who will be the hybrid genetic offspring of a pair of non-fired team members, with each gene consisting at random of either one parent's allele or the other's.  (If the team has fired all of or all but one of its players, a random player will be generated instead of a mated hybrid.)</li>
+					<li><i>proportion of random</i> &mdash; proportion of newly hired players who will be entirely genetically random.</li>
+					<li><i>mutation rate</i> &mdash; the chance that any given gene in a clone or a mated hybrid will differ from the parent's gene.  Setting this to 0% will result in perfect cloning/hybrids with no new genetic variations; setting it to 100% will produce essentially random offspring.</li>
+
+					<h3>Fitness Metrics</h3>
+					<p>Player performance is measured in terms of how often they perform specific tasks in the game; after every play ends, a player's total performance (their "Value" statistic) is recalculated based on their total career statistics multiplied by the corresponding weighting factors below.  Changing how much different actions are rewarded can significantly change the kinds of behavior that become dominant over time as players are fired and new players are cloned and mated and mutated.  (Normally all of these things would be weighted at least a little bit positively, but setting some to negative might produce some interesting results.  It's not like the league can fire you, after all.)</p>
+					<li><i>per yard gained</i> &mdash; how much fitness "Value" a player gains (or loses!) for each <a href="http://en.wikipedia.org/wiki/All-purpose_yardage">yard</a> they carry the ball forward while acting as the ballcarrier for their team.  Yards lost will be scored as well, with the opposite of this value.</li>
+					<li><i>per QB tackle</i> &mdash; Value awarded a player each time they <a href="http://en.wikipedia.org/wiki/Tackle_%28football_move%29#American_and_Canadian_football">tackle</a> the opposing team's ballcarrier while that opposing player has succeeded in moving past the <a href="http://en.wikipedia.org/wiki/Line_of_scrimmage">line of scrimmage</a> (the red line representing where the current play started).</li>
+					<li><i>per QB sack</i> &mdash; Value awarded a player each time they successfully perform a <a href="http://en.wikipedia.org/wiki/Quarterback_sack">sack</a>; that is, when they tackle the opposing team's ballcarrier while that opposing player is still behind the line of scrimmage.</li>
+					<li><i>per TD scored</i> &mdash; Value awarded a player each time they, while carrying the ball, move past the goal line and into the opposing team's endzone, scoring a <a href="http://en.wikipedia.org/wiki/Touchdown">touchdown</a> for their team.</i></li>
+					<li><i>per safety scored</i> &mdash; Value awarded a player each time they successfully sack the opposing team's ballcarrier in the opposing team's own endzone, scoring a <a href="http://en.wikipedia.org/wiki/Safety_%28gridiron_football_score%29">safety</a> for their team.</li>
+					<li><i>per point scored</i> &mdash; Value awarded a player for in-game points they score for their team.  A touchdown earns a team seven points; a safety earns a team two points.  (And the ballcarrier who <i>commits</i> a safety by getting tackled or running out of bounds <i>loses</i> two points on his statistical record.)  Setting this to 1 would thus increase a players Value by 7 for scoring a touchdown and by 2 for a safety; setting it to 5 would earn them 35 for a TD and 10 for a safety.</li>
+
+				</ul>
+
+				<h2>Frequently Answered Questions</h2>
+
+				<h3>How did you make this?</h3>
+				<p>
+					I wrote it in JavaScript, using the basic jquery library, and the football action and the little player portraits are drawn on an HTML &lt;canvas&gt; element.  The genetic algorithms implementation is my own, written from scratch, which means it's probably a bit dodgy compared to more standard implementations.
+				</p>
+
+				<h3>Is the source code available?  Can I modify this?</h3>
+				<p>
+					The source code will be up on GitHub once I stick it on GitHub!  You are welcome to tweak/fork/fiddle with your own copy of it as long as you point clearly to the original work here.
+				</p>
+
+				<h3>It runs slow or bad or whatever on my phone/computer/WebTV.</h3>
+				<p>
+					I have tested this very little outside of the web environments I use every day; if you're not in Chrome on OSX or Safari on an iPhone 4S, I can't vouch for anything.  It will probably run a lot slower on mobile devices than on desktops/laptops.  You're welcome to let me know about specific display/performance issues <a href="http://twitter.com/joshmillard">on twitter</a>. 
+				</p>
+
+				<h3>Why don't they ever pass or punt or hand off the ball?</h3>
+				<p>
+					Because those are all a little more complicated to implement than just running the ball every damn time.  Perhaps they will be taught to do some of these things in the future!
+				</p>
+
+				<h3>Who's the QB on each team?</h3>
+				<p>
+					These footballers are very polite, and so they take turns being the ballcarrier.  This lets more players on a team get a chance to perform well (or not so well) every game in every statistical category despite the fact that only the ballcarrier can score gained or lost yards or points for touchdowns.
+				</p>
+
+				<h3>Why doesn't the simulation accurately reflect the rules of <a href="http://en.wikipedia.org/wiki/American_football_rules">American football</a>?</h3>
+				<p>
+					For two reasons:
+				</p>
+				<p>
+					1. I made a lot of decisions to simplify the simulation compared to real football, in order to keep the implementation from getting overly complicated and to keep the little simulated football games easy to watch.  Having quarters and halves, having teams switch directions, having the ball snapped from a center to the QB, tracking dedicated positions at <i>all</i> like center and QB and halfback and so on, applying penalties, are all details that matter more for a serious football simulation than for a genetic algorithms demonstration wearing a football costume, and so they've been streamlined out for this.
+				</p>
+				<p>
+					2. I don't actually know much about football and so am just wrong about things.  Mostly my experience with the sport is reading Jon Bois' <a href="http://www.sbnation.com/breaking-madden">Breaking Madden</a> and yelling HUDDLE UP at my cats when I want to pretend that they'd ever respond meaningfully to a verbal command.
+				</p>
+
+				<h3>Yeah but so why football then?</h3>
+				<p>
+					Because I wanted something fun to look at.  I've really enjoyed playing with things like <a href="http://rednuht.org/genetic_cars_2/">Genetic Cars</a> and have always wanted to try out some related ideas of my own.  When I finished my first genetic algorithms experiment, <a href="http://joshmillard.com/blurst/">Blurst of Times</a>, I was happy that the idea worked but realized it just wasn't very much fun to <i>watch</i>.  What's more fun?  Tiny dudes running around doing a thing.  And "football" is an easy idea to sell visually in a minimalist way.  You don't need to know a ton about it to get the basic idea, and there's something a little bit enchanting about watching little circles push each other around and accidentally pull of the occasional brilliant play.
+				</p>
+
+			</div>
+
+		</div>
+
+		<br>
+
+		<canvas id="main">should be a canvas here, bro</canvas>
+	</div>
+
+	<div id="controlsbox">
+
+		<div class="controlgroup">Time</div>
+
+		<button id="pause" onclick="pause()">Pause</button><br>
+
+		<button id="turbo" onclick="toggle_speed()">Turbo</button><br>
+
+		<button id="timewarp" onclick="timewarp()">Skip Games</button><br>
+
+		<div class="controllabel"># of games to skip</div>
+		<input id="warpslider" class="slider" type="range" value=20 min=1 max=500 onchange="warpvalue.value=value"/>
+		<output id="warpvalue" class="sliderval">20</output>
+
+
+		<div class="controlgroup">View</div>
+
+		<button id="view" onclick="toggle_view()">Switch roster type</button>
+
+
+		<div class="controlgroup">League</div>
+
+		<div class="controllabel"># of teams</div>
+		<input id="lsizeslider" class="slider" type="range" value=8 min=2 max=8 onchange="lsizevalue.value=value"/>
+		<output id="lsizevalue" class="sliderval">8</output>
+
+		<div class="controllabel">players on team</div>
+		<input id="tsizeslider" class="slider" type="range" value=4 min=1 max=9 onchange="tsizevalue.value=value"/>
+		<output id="tsizevalue" class="sliderval">4</output>
+
+		<div class="controllabel">game length in secs</div>
+		<input id="glengthslider" class="slider" type="range" value=60 min=10 max=240 step=10 onchange="glengthvalue.value=value"/>
+		<output id="glengthvalue" class="sliderval">60</output>
+
+		<button id="newleague" onclick="start_new_league_button()">Start new league</button>
+
+
+		<div class="controlgroup">Genetic Selection</div>
+
+		<div class="controlheader">firing strategy</div>
+
+		<div class="controllabel">games between firings</div>
+		<input id="gamesperfiring" class="slider" type="range" value=2 min=1 max=10 onchange="gamesperfiringslider.value=value"/>
+		<output id="gamesperfiringslider" class="sliderval">2</output>
+
+		<div class="controllabel">% of players to fire</div>
+		<input id="percentperfiring" class="slider" type="range" value=25 min=0 max=100 step=5 onchange="percentperfiringslider.value=value"/>
+		<output id="percentperfiringslider" class="sliderval">25</output>%
+
+		<div class="controlheader">breeding strategy</div>
+
+		<div class="controllabel">proportion of cloning</div>
+		<input id="percentcloning" class="slider" type="range" value=50 min=0 max=100 step=10 onchange="percentcloningslider.value=value"/>
+		<output id="percentcloningslider" class="sliderval">50</output>
+
+		<div class="controllabel">proportion of mating</div>
+		<input id="percentmating" class="slider" type="range" value=30 min=0 max=100 step=10 onchange="percentmatingslider.value=value"/>
+		<output id="percentmatingslider" class="sliderval">30</output>
+
+		<div class="controllabel">proportion of random</div>
+		<input id="percentrandom" class="slider" type="range" value=20 min=0 max=100 step=10 onchange="percentrandomslider.value=value"/>
+		<output id="percentrandomslider" class="sliderval">20</output>
+
+		<div class="controllabel">mutation rate</div>
+		<input id="mutationrate" class="slider" type="range" value=25 min=0 max=100 step=5 onchange="mutationrateslider.value=value"/>
+		<output id="mutationrateslider" class="sliderval">25</output>%
+
+
+		<div class="controlgroup">Fitness Metrics</div>
+
+		<div class="controllabel">Value per yard gained</div>
+		<input id="pyards" class="slider" type="range" value=1 min=-10 max=10 onchange="pyardsslider.value=value"/>
+		<output id="pyardsslider" class="sliderval">1</output>
+
+		<div class="controllabel">Value per QB tackle</div>
+		<input id="ptackles" class="slider" type="range" value=3 min=-10 max=10 onchange="ptacklesslider.value=value"/>
+		<output id="ptacklesslider" class="sliderval">3</output>
+
+		<div class="controllabel">Value per QB sack</div>
+		<input id="psacks" class="slider" type="range" value=10 min=-10 max=10 onchange="psacksslider.value=value"/>
+		<output id="psacksslider" class="sliderval">10</output>
+
+		<div class="controllabel">Value per TD scored</div>
+		<input id="ptouchdowns" class="slider" type="range" value=0 min=-10 max=10 onchange="ptouchdownsslider.value=value"/>
+		<output id="ptouchdownsslider" class="sliderval">0</output>
+
+		<div class="controllabel">Value per safety scored</div>
+		<input id="psafeties" class="slider" type="range" value=0 min=-10 max=10 onchange="psafetiesslider.value=value"/>
+		<output id="psafetiesslider" class="sliderval">0</output>
+
+		<div class="controllabel">Value per point scored</div>
+		<input id="ppoints" class="slider" type="range" value=0 min=-10 max=10 onchange="ppointsslider.value=value"/>
+		<output id="ppointsslider" class="sliderval">0</output>
+
+	</div>
+
+	<br>
+
+	<div id="playerstatsbox" class="mono">
+		<h2>Additional statistics</h2>
+		<div>
+			<button id="statsleague" class="statsbutton" onclick="change_stats('league')">Current league</button>
+			<button id="statsgame" class="statsbutton" onclick="change_stats('game')">Current game</button>
+			<button id="statsretired" class="statsbutton" onclick="change_stats('retired')">Retired players</button>
+			<button id="statsplaybyplay" class="statsbutton" onclick="change_stats('playbyplay')">Play-by-play</button>
+			<button id="statsfinalscores" class="statsbutton" onclick="change_stats('finalscores')">Final scores</button>
+		</div>
+		<div id="playerstats"></div>
+	</div>
+
+
+	<script type="text/javascript" src="main.js"></script>
+
+</body>
+</html>
