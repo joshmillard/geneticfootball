@@ -12,20 +12,19 @@ Josh Millard 2015 */
 		in addition to top and left and width/height, to make bounds-checking less of a snarl
 		of additions and shit
 
+	- rework start-of-play player distribution code to make sure the offensive QB can't literally
+		start the play out of bounds and score a safety
+
 	- stats, stats, stats
 		- add a larger variety of player/team/league stats that the game can generate to the page
 			and users can look through, if they're the stat-happy sorts.
 		- track history in detail: retain game-by-game records for players and teams so that
 			the current state of things can be compared with the past in more detail than just
 			raw W/L/T counts and career yard/TD/tackle/etc sums.
-		- instead of chucking fired players, hold on to their objects and associated records
 
 	- graphs, graphs, graphs
 		- with historical stats, it'd be possible to generate graphs of various things over time,
 			like player value over time, team W/L ratio over time, etc
-
-	- rework start-of-play player distribution code to make sure the offensive QB can't literally
-		start the play out of bounds and score a safety
 
 	- for mating and cloning, inheriting a surname from parent would be a nice touch; possibly allow
 		for complicated things like hyphenated surnames and the Jr, III, IV, etc postfix if the
@@ -34,6 +33,17 @@ Josh Millard 2015 */
 	- per above, also add parent1 and parent2 fields to players, to track the chain of ancestry
 		back as another potential data-tracking detail
 
+	- rewrite how league/game/fitness defaults are handled so they're written *to* the page based
+		on values set in the code here, rather than taken from hardcoded values in the index.html
+		tags themselves; also, manage updating internal values as a hook off events generated over
+		there, rather than just reading the DOM more often than necessary
+
+	- collect various stray globals into a couple containers objects; most of the global constants
+		in the code could rightly go into a Game object, with the the remainder probably fitting
+		well into a Display object for stuff relating to page/canvas/etc.
+
+	- regularize some of the function calls that have mismatching or incongruous names as baggage
+		from the hacky initial drafts of the code
 
 */
 
@@ -96,16 +106,6 @@ var preplaydelay = 0.5 / turbo; // how long to stay on new play after it's been 
 
 var los = 50; // line of scrimmage, where on the field the play begins from.
 
-/* original one-for-each-letter name data
-var firstnames = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-	"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
-	];
-var lastnames = ["Adama", "Bourne", "Clark", "Donahue", "Estevez", "Franco", "Gilles", 
-	"Honda", "Idaho", "Jin", "Kim", "Labatt", "Millard",
-	"N'diaye", "O'Dell", "Parker", "Quine", "Ralston", "Shen", 
-	"Tautou", "Ulster", "Van Eck", "White", "Xavier", "Young", "Zell"
-	];
-*/
 
 // relatively gender-neutral first names
 var androgynous = "Adrian Alex Andy Ash Aubrey Avery Bailey Bernie Blaine Blair Bobbie Brett Brook Cameron Campbell Carey \
@@ -299,6 +299,7 @@ function final(str) {
 	}
 }
 
+// Not currently in use.
 // given a genetic value and a gene length, encode a GATC string representing the gene
 function genestring(val, size) {
 	var code = ["G", "A", "T", "C"];
@@ -618,12 +619,6 @@ function initialize_player(genes) {
 	p.v; // current velocity
 	p.vt; // current rotational velocity
 
-	// original raw random range values for early versions of football players, pre-genes
-	//p.heading = (Math.random() * Math.PI / 2) - (Math.PI / 4); // base heading in radians
-	//p.speed = (Math.random() * 1) + 0.25; // base scalar speed in direction p.t
-	//p.turn = (Math.random() * 0.1) - 0.05; // base rotational velocity
-	//p.size = (Math.random() * 2.5) + 3.75; // player size;
-
 	p.scores = new Object(); // collection of per-player scoring stats
 	p.scores.points = 0;
 	p.scores.yards = 0;
@@ -719,15 +714,6 @@ function get_fitness(p) {
 	return fitness;
 }
 
-var prevcanvaswidth = 0; // for tracking canvas resizes 
-
-var showsmall = false;
-var prevshowsmall = showsmall;
-
-function toggle_details() {
-	showsmall = !showsmall;
-}
-
 var rosterview = "players"; // global for tracking what kind of info to show on canvas
 function toggle_view() {
 	if(rosterview == "players") {
@@ -737,6 +723,8 @@ function toggle_view() {
 		rosterview = "players";
 	}
 }
+
+var prevcanvaswidth = 0; // for tracking canvas resizes
 
 // parent drawing function that calls all the other draw functions in proper order
 function draw_canvas() {
@@ -806,37 +794,12 @@ function print_stats() {
 	}
 }
 
-// draw play by play list
-function draw_playcall() {
-	context.fillStyle = "#444444";
-	context.font = "15px Courier";
-	context.fillText("Play-by-play", 20, 380);
-	//var out = "<h3>Play-by-play</h3>";	
-
-	context.fillStyle = "#666666";
-	for(var i = 0; i < playcalls.length; i++) {
-		context.fillText(playcalls[i], 20, 420 + (i * 20));
-	}
-}
-
 function print_playcall() {
 	var out = "<h2>Play by play</h2>";	
 	for(var i = 0; i < playcalls.length; i++) {
 		out += playcalls[i] + "<br>";
 	}
 	$("#playerstats").html(out);
-}
-
-// draw final scores list
-function draw_final() {
-	context.fillStyle = "#444444";
-	context.font = "15px Courier";
-	context.fillText("Final scores", 20, 600);
-
-	context.fillStyle = "#666666";
-	for(var i = 0; i < finalscores.length; i++) {
-		context.fillText(finalscores[i], 20, 640 + (i * 20));
-	}
 }
 
 // chuck this out to an html div
@@ -848,107 +811,13 @@ function print_final() {
 	$("#playerstats").html(out);
 }
 
-function get_vorp(p) {
-	var vorp = 0;
+// find out the players fitness values averaged against total games played
+function get_value(p) {
+	var value = 0;
 	if(p.played > 0) {
-		vorp = (Math.floor( (get_fitness(p) / p.played) * 10)) / 10;
+		value = (Math.floor( (get_fitness(p) / p.played) * 10)) / 10;
 	}
-	return vorp;
-}
-
-// draw game score information
-function draw_scoreboard() {
-	var x = 400;
-	var y = 400;
-
-	var cl1 = teams.left.color;
-	var cl2 = teams.left.color2;
-	var cr1 = teams.right.color;
-	var cr2 = teams.right.color2;
-
-	context.fillStyle = "#444444";
-	context.font = "15px Courier";
-	context.fillText("pts", x, y);
-	context.fillText("yds", x + 50, y);
-	context.fillText("TDs", x + 100, y);
-	context.fillText("Saf", x + 150, y);
-	context.fillText("tak", x + 200, y);
-	context.fillText("sak", x + 250, y);
-	context.fillText("W/L/T", x + 300, y);
-
-	context.fillStyle = cl1;
-	context.fillRect(x - 93, y + 6, 90, 18);
-
-	context.fillStyle = cl2;
-	context.font = "15px Courier";
-	context.fillText(teams.left.name, x - 90, y + 20);
-	context.fillText(teams.left.scores.points, x, y + 20);
-	context.fillText(teams.left.scores.yards, x + 50, y + 20);
-	context.fillText(teams.left.scores.touchdowns, x + 100, y + 20);
-	context.fillText(teams.left.scores.safeties, x + 150, y + 20);
-	context.fillText(teams.left.scores.tackles, x + 200, y + 20);
-	context.fillText(teams.left.scores.sacks, x + 250, y + 20);
-	context.fillText(teams.left.won + "/" + teams.left.lost + "/" + teams.left.tied, x + 300, y + 20);
-
-	context.fillStyle = cr2;
-	context.fillRect(x - 93, y + 26, 90, 18);
-
-	context.fillStyle = cr1;
-	context.font = "15px Courier";
-	context.fillText(teams.right.name, x - 90, y + 40);
-	context.fillText(teams.right.scores.points, x, y + 40);
-	context.fillText(teams.right.scores.yards, x + 50, y + 40);
-	context.fillText(teams.right.scores.touchdowns, x + 100, y + 40);
-	context.fillText(teams.right.scores.safeties, x + 150, y + 40);
-	context.fillText(teams.right.scores.tackles, x + 200, y + 40);
-	context.fillText(teams.right.scores.sacks, x + 250, y + 40);
-	context.fillText(teams.right.won + "/" + teams.right.lost + "/" + teams.right.tied, x + 300, y + 40);
-
-	
-	// generate string for current play parameters
-	var downs = ["1st", "2nd", "3rd", "4th"];
-	var t = "";
-	if(possession == teams.left) {
-		if(yardtarget == 100) {
-			t = "goal";
-		}
-		else {
-			t = yardtarget - los;
-		}
-	}
-	else {
-		if(yardtarget == 0) {
-			t = "goal";
-		}
-		else {
-			t = los - yardtarget;
-		}
-	}
-	var dtext = downs[currdown - 1] + " and " + t;
-	if(possession == teams.left) {
-		dtext += " >>";
-	}
-	else {
-		dtext = "<< " + dtext;
-	}
-	
-	// current play
-	context.font = "50px Courier";
-	context.fillStyle = possession.color2;
-	context.fillText(dtext, 250, 40);
-	context.lineWidth = 2;
-	context.strokeStyle = possession.color;
-	context.strokeText(dtext, 250, 40);
-
-	// game clock
-	context.font = "50px Courier";
-	context.fillStyle = "#000000";
-	context.fillText(pretty_time(gameclock), 50, 40);
-
-	// play clock
-	context.font = "50px Courier";
-	context.fillStyle = "#ffffff";
-	context.fillText(pretty_time(playclock), 50, 90);
+	return value;
 }
 
 // draw brief season records for current teams
@@ -979,8 +848,6 @@ function draw_WLT() {
 	context.fillText(teams.right.won, x + 80, y + 40);
 	context.fillText(teams.right.lost, x + 120, y + 40);
 	context.fillText(teams.right.tied, x + 160, y + 40);
-
-
 }
 
 // draw detailed stats of players
@@ -988,8 +855,6 @@ function draw_roster_stats() {
 	// player stats
 	var x = 400;
 	var y = 500;
-
-
 
 	context.fillStyle = "#444444";
 	context.font = "14px Courier";
@@ -1015,7 +880,7 @@ function draw_roster_stats() {
 			context.fillText(p.scores.safeties, x + 150, yoff);
 			context.fillText(p.scores.tackles, x + 200, yoff);
 			context.fillText(p.scores.sacks, x + 250, yoff);
-			context.fillText(get_vorp(p), x + 300, yoff);
+			context.fillText(get_value(p), x + 300, yoff);
 
 			if(p == ballcarrier) {
 				context.fillText("<>", x - 120, yoff);
@@ -1051,7 +916,7 @@ function draw_rosters() {
 
 			context.font = "14px Courier";
 			context.fillStyle = p.team.color;
-			context.fillText(get_vorp(p), xoff, yoff + 95);
+			context.fillText(get_value(p), xoff, yoff + 95);
 
 			if(p == ballcarrier) {
 				context.drawImage(ballsmallimg, xoff - 3, yoff + 30);
@@ -1178,12 +1043,11 @@ function draw_featured_player(p) {
 	else { aim = "HOPELESS"; }
 	context.fillText("Aim:     " + aim, xoff, yoff + 320);
 
-	context.fillText("Value:   " + get_vorp(p), xoff, yoff + 340);
+	context.fillText("Value:   " + get_value(p), xoff, yoff + 340);
 
 }
 
 function change_stats(type) {
-	console.log("Changing stats: " + type);
 	statsview = type;
 	print_stats();
 }
@@ -1206,9 +1070,6 @@ function print_playerstats(scope) {
 	else if(scope == "retired") {
 		var tempteam = new Object();
 		tempteam.roster = firedplayers;
-		tempteam.color = "#ff0000";
-		tempteam.color2 = "#ffff00";
-		tempteam.name = "retirees";
 		tm = [tempteam];
 		out = "<h2>Retired players</h2>";
 	}
@@ -1223,16 +1084,6 @@ function print_playerstats(scope) {
 		out += "<th>" + cols[i] + "</th>\n";
 	}
 	out += "</tr>\n";
-
-/*
-// hacky testing of fired player stuff
-	var tempteam = new Object();
-	tempteam.roster = firedplayers;
-	tempteam.color = "#ff0000";
-	tempteam.color2 = "#ffff00";
-	tempteam.name = "retirees";
-	tm = [tempteam];
-*/
 
 	if(scope == "retired" && tm[0].roster.length == 0) {
 		out += "(no players have been fired yet)<br><br>";
@@ -1250,7 +1101,7 @@ function print_playerstats(scope) {
 			out += "<td>" + p.scores.safeties + "</td>\n";
 			out += "<td>" + p.scores.tackles + "</td>\n";
 			out += "<td>" + p.scores.sacks + "</td>\n";
-			out += "<td>" + get_vorp(p) + "</td>\n";
+			out += "<td>" + get_value(p) + "</td>\n";
 			out += "<td>" + p.hired + "</td>\n";
 			out += "<td>" + p.fired + "</td>\n";
 
@@ -1277,7 +1128,9 @@ function pretty_time(s) {
 	return(min + ":" + sec);
 }
 
-// experimentally drawing a player based on genes
+// TODO: revisit the way this offsets player based on height, and consider handling player avatar
+//	bounding box width/height stuff as a player attribute instead of calculating stuff on the fly?
+// Draw a player based on genes, coords, and a scaling factor
 function draw_player_avatar(p, x, y, sc) {
 
 	var scale = sc;
@@ -1465,8 +1318,6 @@ function draw_player(p) {
 			context.scale(0.2, 0.2);
 			context.drawImage(ballimg, 0, 0);
 			context.restore();
-			// 	context.drawImage(ballimg, (field.x + p.x * scale), (field.y + p.y * scale));
-
 		}
 		else {
 			context.save();
@@ -1475,11 +1326,8 @@ function draw_player(p) {
 			context.scale(0.2, 0.2);
 			context.drawImage(ballimg, 0, -25);
 			context.restore();
-			//	context.drawImage(ballimg, (field.x + p.x * scale) - 40, (field.y + p.y * scale));
 		}
 	}
-
-
 }
 
 // draw the football field
@@ -1503,7 +1351,6 @@ function draw_field() {
 	context.strokeStyle = teams.left.color2;
 	context.stroke();
 	// logo itself, semi-transparent
-
 	context.save();
 	context.globalAlpha = 0.5;
 	context.translate(dx + field.endleft.x + 2, dy + field.endleft.y + 22)
@@ -1523,7 +1370,6 @@ function draw_field() {
 	context.lineWidth = 1.2;
 	context.strokeStyle = teams.right.color;
 	context.stroke();
-
 	
 	context.save();
 	context.globalAlpha = 0.5;
@@ -1620,20 +1466,10 @@ function handle_collision(p1, p2) {
 			// no need to push these guys farther apart than they need to be to not be overlapping
 			sepspeed = overlap; 
 		}
-		/* we want to push these two players each half the sepspeed distance in opposite directions
-			from one another, so we take the heading t of the diagonal between them and move each
-			accordingly 
-		*/
-	/* original equal-and-opposite pushing code
-		var pushx = Math.cos(t) * sepspeed * 0.5;
-		var pushy = Math.sin(t) * sepspeed * 0.5;
-		p1.x += pushx;
-		p2.x -= pushx;
-		p1.y += pushy;
-		p2.y -= pushy;
-	*/
 
-		/* Alternate approach: consider the mass differential between two colliding players a good reason
+		/*  Push overlapping players away from one another.
+
+			This approach considers the mass differential between two colliding players a good reason
 			to have the balance of the pushback fall on the smaller player.  Question: is the effect too
 			stark as a strict proportion like this?  TODO: consider softening the degree of influence this
 			has.  Or we might otherwise modify/mitigate it with other genetic traits.
@@ -1900,7 +1736,8 @@ function end_of_down(ev, actor) {
 		other.scores.safeties++;
 		other.scores.points += 2;
 		if(actor != null) {
-			// sometimes a safety will be from a timer violation, sans tackling actor
+			// sometimes a safety will be from a timer violation, sans tackling actor, so we need to
+			//	be sure there is an opposing player before trying to give them credit
 			actor.scores.safeties++;
 			actor.scores.points += 2;
 			other.scores.tackles++;
@@ -2002,7 +1839,6 @@ function pause() {
 
 // freeze the action and display a message
 function stop_play() {
-	//pause();
 	state = "timeout";
 	timer = playdelay;
 	reset_playclock();
@@ -2010,13 +1846,14 @@ function stop_play() {
 
 // set up the next play based on content stored in nextdown at end of previous down
 function next_play() {
-
 	// track whether this is a change of possession from last down
 	var possession_changed = false;
 	if(possession != nextdown.possession) {
 		possession_changed = true;
 	}
 
+	// TODO handle the current game state globals here as just another instance of the same kind of object
+	//	as nextdown, instead of some coincidentally similar globals
 	currdown = nextdown.down;
 	possession = nextdown.possession;
 	los = nextdown.los;
@@ -2066,13 +1903,15 @@ function knee() {
 	end_of_down("tackle");
 }
 
+// TODO rewrite these and related calls to just pass a reference to the player, now that the code's
+//	been rewritten to assign team roster index values to players a the p.id attribute
 // given a list of players, return index of the best performer
 function find_best_player(team) {
-	var best = -10000000000; // an impossibly low vorp, presumably
+	var best = -10000000000; // an impossibly low player value, presumably
 	var besti = 0;
 	for(var i = 0; i < team.length; i++) {
 		var p = team[i];
-		var f = get_vorp(p);
+		var f = get_value(p);
 		if(f > best) {
 			best = f;
 			besti = i;
@@ -2083,11 +1922,11 @@ function find_best_player(team) {
 
 // given a list of players, return index of the worst performer
 function find_worst_player(team) {
-	var worst = 10000000000; // an impossibly high vorp, presumably
+	var worst = 10000000000; // an impossibly high player value, presumably
 	var worsti = 0;
 	for(var i = 0; i < team.length; i++) {
 		var p = team[i];
-		var f = get_vorp(p);
+		var f = get_value(p);
 		if(f < worst) {
 			worst = f;
 			worsti = i;
@@ -2114,6 +1953,7 @@ function clock_violation() {
 function game_over() {
 	// end the current play as if the playclock was up
 	clock_violation();
+
 	// and do final score stuff, get ready for next match.
 	var fstring = "Game " + gamesplayed + ": " + teams.left.name3 + " " + teams.left.scores.points + ", " + teams.right.name3 + " " + teams.right.scores.points;
 	final(fstring);
@@ -2179,7 +2019,7 @@ function game_over() {
 			for(var i = 0; i < replacing; i++) {
 				// cull this many players...
 				var firei = find_worst_player(keepers); // find a loser
-		//		console.log(keepers[firei].number + " " + keepers[firei].lastname + " is worst, with " + get_vorp(keepers[firei]) );
+		//		console.log(keepers[firei].number + " " + keepers[firei].lastname + " is worst, with " + get_value(keepers[firei]) );
 				losers.push(keepers[firei]); // add them to losers
 				keepers.splice(firei, 1); // ditch them from keepers
 			}
@@ -2225,7 +2065,7 @@ function game_over() {
 	initiate_random_game();
 }
 
-// return a randomly generated team definition
+// return a randomly selected team definition
 function generate_team() {
 	team = new Object();
 
@@ -2355,25 +2195,11 @@ function generate_players(size, team) {
 	return pl;
 }
 
-// reset team scores to zero
-// TODO: move these into the teams.left and teams.right objects
+// TODO establish a general template of an object for handling instances of sets-of-scores, to facilitate
+//	easily keeping lists of player- and team-specific stats over the history of games in the league.
+// reset current game team scores to zero
 function reset_scores() {
-/*
-	scores.left = new Object();
-	scores.left.points = 0;
-	scores.left.yards = 0;
-	scores.left.tackles = 0;
-	scores.left.sacks = 0;
-	scores.left.touchdowns = 0;
-	scores.left.safeties = 0;
-	scores.right = new Object();
-	scores.right.points = 0;
-	scores.right.yards = 0;
-	scores.right.tackles = 0;
-	scores.right.sacks = 0;
-	scores.right.touchdowns = 0;
-	scores.right.safeties = 0;
-*/
+
 	var ls = new Object();
 	ls.points = 0;
 	ls.yards = 0;
@@ -2393,8 +2219,6 @@ function reset_scores() {
 	teams.right.scores = rs;	
 
 }
-
-	
 
 // reset next down object to game-initial values
 function reset_nextdown() {
@@ -2471,6 +2295,10 @@ function timewarp() {
 		//	just unpause before proceeding.
 		pause();
 	}
+	if(turbo_enabled) {
+		// likewise, turbo + timewarp makes no sense, so let's just make sure we turn turbo off
+		toggle_speed();
+	}
 	if(!is_headless) {
 		// no idea what would happen if we tried to warp while warping, so let's be cautious
 		warpgamelimit = $("#warpvalue").val();
@@ -2489,12 +2317,10 @@ function headless() {
 		if(warpgames == warpgamelimit) {
 			is_headless = false;
 			change_speed(1);
+			print_stats(); // update the stats to show the passage of time immediately
 			return;
 		}
 	}
-	turbo_enabled = false;
-	change_speed(1);
-	print_stats(); // update the stats to show the passage of time immediately
 }
 
 // switch between predefined turbo setting and normal speed
@@ -2600,13 +2426,4 @@ var timer = 0;
 var lastframe = Date.now();	// time-between-frame tracking variable
 var theloop; // = setInterval( gameloop, framelimit );
 
-// get everything started
-leaguesize = $("#lsizevalue").val();	// this is a pretty dumb way to deal with defaults, natch
-teamsize = $("#tsizevalue").val();
-gameclockmax = $("#glengthvalue").val();
-start_new_league(leaguesize, teamsize, gameclockmax);
-
-
-
-
-
+start_new_league_button();
