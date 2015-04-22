@@ -5,6 +5,8 @@ Josh Millard 2015 */
 /* TODO
 	- all kinds of stuff but also
 
+	- FAAAAAAAAACEEEEES
+
 	- fix case where ballcarrier can make a diagonal move from the corner of the fair play area
 		to the out-of-bounds area above opposite endzone and thus escape the universe
 
@@ -44,6 +46,8 @@ Josh Millard 2015 */
 
 	- regularize some of the function calls that have mismatching or incongruous names as baggage
 		from the hacky initial drafts of the code
+
+	- depluralize team names when team size is set to 1
 
 */
 
@@ -1128,6 +1132,8 @@ function pretty_time(s) {
 	return(min + ":" + sec);
 }
 
+var faceimg = new Image();
+faceimg.src = "portraits/mockup.png";
 // TODO: revisit the way this offsets player based on height, and consider handling player avatar
 //	bounding box width/height stuff as a player attribute instead of calculating stuff on the fly?
 // Draw a player based on genes, coords, and a scaling factor
@@ -1203,6 +1209,15 @@ function draw_player_avatar(p, x, y, sc) {
 	context.fillStyle = p.skincolor;
 	context.fillRect(ox + neckx, oy - headh - scale, headw, headh);
 	context.fillRect(ox + neckx + scale, oy - scale, scale*2, scale);
+
+/*	///// experimental face stuff
+	context.save();
+	context.translate(ox + neckx - scale - 9, oy - headh - 12);
+	context.scale(0.5,0.5);
+	context.drawImage(faceimg, 0, 0);
+	context.restore();
+*/
+
 	// and a helmet
 	context.fillStyle = c2;
 	context.fillRect(ox + neckx - scale, oy - headh, scale, scale * 2);
@@ -1234,6 +1249,9 @@ function draw_player_avatar(p, x, y, sc) {
 	// right shoe
 	context.fillStyle = "#000000";
 	context.fillRect(ox + trunkw - rlegw, oy + trunkh + scale + rlegh, rlegw + scale, scale);
+
+	
+
 }
 
 // draw all the players
@@ -2119,6 +2137,9 @@ function generate_league(size) {
 	for(var i = 0; i < size; i++) {
 		var t = generate_team();
 		t.id = i;
+		if(teamsize == 1) {
+			t.name = t.name.substring(0,t.name.length - 1); // depluralize team name if only a single player
+		}
 		league.push(t);
 	}
 	return league;
