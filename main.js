@@ -49,7 +49,13 @@ Josh Millard 2015 */
 
 	- depluralize team names when team size is set to 1
 
+	- IE11 does not approve of the current hacky approach of setting default values in index.html for
+		sliders and such and then pulling .val() from that at runtime; doesn't seem to accept values
+		as real until the slider has actually been manipulated by the player.
+
 */
+
+"use strict";
 
 // our html canvas object
 var thecanvas = document.getElementById("main");
@@ -109,6 +115,34 @@ var playdelay = 1 / turbo; // how long to stay on current play once it ends
 var preplaydelay = 0.5 / turbo; // how long to stay on new play after it's been set up before action
 
 var los = 50; // line of scrimmage, where on the field the play begins from.
+
+//////// a bunch of global definitions just to be explicit in most case about declaring these things /////////
+
+var league; // a global containing the entire set of teams currently in existence
+
+var teams;	// global object containing two teams, .left and .right
+var players; // global list of all players
+
+var firedplayers; // list of players who have been fired from league teams;
+
+// initialize the play state with team possession and ballcarrier
+var currdown;	// what down is it?
+var possession;	// which team has possession of the ball?
+var yardtarget;	// what's the yardmarker needed for a first down?
+var ballcarrier; // what player currently has the ball?
+
+// global object for tracking info for setting up new play
+var nextdown = new Object();
+
+// globals to keep track of team score stuff
+var scores = new Object();
+
+// game loop tracking globals
+var state = "ready";
+var timer = 0;
+
+var lastframe = Date.now();	// time-between-frame tracking variable
+var theloop; // = setInterval( gameloop, framelimit );
 
 
 // relatively gender-neutral first names
@@ -982,7 +1016,7 @@ function draw_readout() {
 	context.fillText(rs, x + rsoff + 80, y + 20 + foff);
 
 	var togo = Math.abs(yardtarget - los);
-	tgoff = 0;
+	var tgoff = 0;
 	if(togo < 10) { tgoff = 14; }
 	else if(togo < 100) { tgoff = 7; }
 	context.fillText(currdown, x + 24, y + 70 + foff);
@@ -1695,7 +1729,8 @@ function end_of_down(ev, actor) {
 	}
 
 	var deadball = Math.floor(ballcarrier.x + 0.5);
-	yardage = get_yardage(ballcarrier, los);
+	var yardage = get_yardage(ballcarrier, los);
+	var playcall = ""
 
 	// First we handle scoring/announcements based on the type of end-of-down event that occurred
 	if(ev == "tackle") {
@@ -2085,7 +2120,7 @@ function game_over() {
 
 // return a randomly selected team definition
 function generate_team() {
-	team = new Object();
+	var team = new Object();
 
 	// grab a random team definition, pull it out of circulation, and assign that to this team
 	var r = Math.floor(Math.random() * teamdefs.length);
@@ -2260,9 +2295,9 @@ function reset_finalscores() {
 
 // get input from the control on the page and use them to start a new league
 function start_new_league_button() {
-	var lsize = $("#lsizevalue").val();
-	var tsize = $("#tsizevalue").val();
-	var glength = $("#glengthvalue").val();
+	var lsize = $("#lsizevalue").val() || leaguesize;
+	var tsize = $("#tsizevalue").val() || teamsize;
+	var glength = $("#glengthvalue").val() || gameclockmax;
 	// TODO sanity check this shit in case of weird input, falling back to good defaults?
 
 	start_new_league(lsize, tsize, glength);
@@ -2279,16 +2314,16 @@ function start_new_league(lsize, tsize, glength) {
 	reset_playcalls();
 	reset_finalscores();
 
-	// set initial speed to normal frame rate
-	turbo_enabled = 0;
-	change_speed(1);
-
 	// generate a roster of teams for the league
 	generate_league(leaguesize);
 	// set up the firedplayers array for tracking people who get canned
 	firedplayers = [];
 	// and kick off our first game
 	initiate_random_game();
+
+	// set initial speed to normal frame rate
+	turbo_enabled = 0;
+	change_speed(1);
 }
 
 // alter the simulation framerate and scale time-sensitive controls accordingly
@@ -2419,32 +2454,6 @@ function gameloop() {
 
 }
 
-///////// a bunch of global definitions just to be explicit in most case about declaring these things /////////
 
-var league; // a global containing the entire set of teams currently in existence
-
-var teams;	// global object containing two teams, .left and .right
-var players; // global list of all players
-
-var firedplayers; // list of players who have been fired from league teams;
-
-// initialize the play state with team possession and ballcarrier
-var currdown;	// what down is it?
-var possession;	// which team has possession of the ball?
-var yardtarget;	// what's the yardmarker needed for a first down?
-var ballcarrier; // what player currently has the ball?
-
-// global object for tracking info for setting up new play
-var nextdown = new Object();
-
-// globals to keep track of team score stuff
-var scores = new Object();
-
-// game loop tracking globals
-var state = "ready";
-var timer = 0;
-
-var lastframe = Date.now();	// time-between-frame tracking variable
-var theloop; // = setInterval( gameloop, framelimit );
-
+// let's get this party started
 start_new_league_button();
