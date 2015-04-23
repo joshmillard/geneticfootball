@@ -38,7 +38,8 @@ Josh Millard 2015 */
 	- rewrite how league/game/fitness defaults are handled so they're written *to* the page based
 		on values set in the code here, rather than taken from hardcoded values in the index.html
 		tags themselves; also, manage updating internal values as a hook off events generated over
-		there, rather than just reading the DOM more often than necessary
+		there, rather than just reading the DOM more often than necessary. (Will also fix IE11 
+		slider value issue.)
 
 	- collect various stray globals into a couple containers objects; most of the global constants
 		in the code could rightly go into a Game object, with the the remainder probably fitting
@@ -46,8 +47,6 @@ Josh Millard 2015 */
 
 	- regularize some of the function calls that have mismatching or incongruous names as baggage
 		from the hacky initial drafts of the code
-
-	- depluralize team names when team size is set to 1
 
 	- IE11 does not approve of the current hacky approach of setting default values in index.html for
 		sliders and such and then pulling .val() from that at runtime; doesn't seem to accept values

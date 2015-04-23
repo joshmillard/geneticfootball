@@ -1,0 +1,10 @@
+changelog
+
+04/23/2015
+- partial fix to IE11 problem; game will now run for anyone stuck with this browser, but control sliders need to be changed once after page load to actually correctly provide the game with a value.
+
+04/22/2015
+- major feature addition: 1-player leagues now use singular version of team names, e.g. Dove vs. Penguin instead of Doves/Penguins
+
+04/21/2015
+- initial public release, everything is probably perfect forever
