@@ -656,15 +656,11 @@ function initialize_player(genes) {
 	p.v; // current velocity
 	p.vt; // current rotational velocity
 
-	p.scores = new Object(); // collection of per-player scoring stats
-	p.scores.points = 0;
-	p.scores.yards = 0;
-	p.scores.tackles = 0;
-	p.scores.sacks = 0;
-	p.scores.touchdowns = 0;
-	p.scores.safeties = 0;
+	p.scores = get_new_scores();	// current set of score values for player
+	p.history = [];	// array of past game scores
+	p.career = get_new_scores(); 	// running total scores across all games
 
-	p.played = 0;
+	p.played = 0;	// number of games played
 
 	return p;
 }
@@ -741,12 +737,12 @@ function get_fitness(p) {
 	w_points = $("#ppoints").val();
 
 	var fitness = 0;
-	fitness += p.scores.yards * w_yards;	// positive yardage as ballcarrier is good, negative is bad
-	fitness += p.scores.sacks * w_sacks;	// a sack is worth a lot on defense; you stopped them AND cost them yards
-	fitness += p.scores.tackles * w_tackles; // a tackle is decent defense but not accomplishing as much as a sack
-	fitness += p.scores.touchdowns * w_touchdowns;
-	fitness += p.scores.safeties * w_safeties;
-	fitness += p.scores.points * w_points;
+	fitness += p.career.yards * w_yards;	// positive yardage as ballcarrier is good, negative is bad
+	fitness += p.career.sacks * w_sacks;	// a sack is worth a lot on defense; you stopped them AND cost them yards
+	fitness += p.career.tackles * w_tackles; // a tackle is decent defense but not accomplishing as much as a sack
+	fitness += p.career.touchdowns * w_touchdowns;
+	fitness += p.career.safeties * w_safeties;
+	fitness += p.career.points * w_points;
 
 	return fitness;
 }
@@ -911,6 +907,7 @@ function draw_roster_stats() {
 			context.fillStyle = p.team.color;
 			context.fillText("#" + p.number + " " + p.lastname, x - 100, yoff);
 
+			// note: p.scores is per-game stats, not career stats
 			context.fillText(p.scores.points, x, yoff);
 			context.fillText(p.scores.yards, x + 50, yoff);
 			context.fillText(p.scores.touchdowns, x + 100, yoff);
@@ -1097,18 +1094,18 @@ function print_playerstats(scope) {
 	if(scope == "game") {
 		// just the two teams in the current game
 		tm = [teams.left, teams.right];
-		out = "<h2>Current game</h2>"
+		out = "<h2>Current game - career totals</h2>"
 	}
 	else if(scope == "league") {
 		// all the teams in the league
 		tm = league;		
-		out = "<h2>Current league</h2>"
+		out = "<h2>Current league - career totals</h2>"
 	}
 	else if(scope == "retired") {
 		var tempteam = new Object();
 		tempteam.roster = firedplayers;
 		tm = [tempteam];
-		out = "<h2>Retired players</h2>";
+		out = "<h2>Retired players - career totals</h2>";
 	}
 	else {
 		console.log("bad scope in print_playerstats:" + scope);
@@ -1132,12 +1129,12 @@ function print_playerstats(scope) {
 			out += "<tr>\n";
 			out += "<td bgcolor='" + p.team.color2 + "'><font color='" + p.team.color + "'>" + p.team.name + "</font></td>\n"; 
 			out += "<td>#" + p.number + " " + p.firstname + " " + p.lastname + "</td>\n";
-			out += "<td>" + p.scores.points + "</td>\n";
-			out += "<td>" + p.scores.yards + "</td>\n";
-			out += "<td>" + p.scores.touchdowns + "</td>\n";
-			out += "<td>" + p.scores.safeties + "</td>\n";
-			out += "<td>" + p.scores.tackles + "</td>\n";
-			out += "<td>" + p.scores.sacks + "</td>\n";
+			out += "<td>" + p.career.points + "</td>\n";
+			out += "<td>" + p.career.yards + "</td>\n";
+			out += "<td>" + p.career.touchdowns + "</td>\n";
+			out += "<td>" + p.career.safeties + "</td>\n";
+			out += "<td>" + p.career.tackles + "</td>\n";
+			out += "<td>" + p.career.sacks + "</td>\n";
 			out += "<td>" + get_value(p) + "</td>\n";
 			out += "<td>" + p.hired + "</td>\n";
 			out += "<td>" + p.fired + "</td>\n";
@@ -2026,7 +2023,25 @@ function game_over() {
 		teams.right.won++;
 	}
 
-	///// FIRING & BREEDING //////
+	///// HISTORICAL SCOREKEEPING /////
+
+	var tm = [teams.left, teams.right];
+	for(var k = 0; k < tm.length; k++) {
+		var t = tm[k];
+		// add the team scores for the just-finished game to team score histories
+		tm[k].history.push(copy_scores(tm[k].scores));
+		tm[k].career = sum_scores(tm[k].scores, tm[k].career);
+
+		// and then go through each player and add their current game scores to their personal history
+		var r = tm[k].roster;
+		for(var i = 0; i < r.length; i++) {
+			r[i].history.push(copy_scores(r[i].scores)); // record current game's stats
+			r[i].career = sum_scores(r[i].scores, r[i].career); // add current game's stats to career totals
+		}
+	}
+
+
+	///// FIRING & BREEDING /////
 
 	// handle firing/breeding issues for each team that just finished the game
 	var gpf = $("#gamesperfiringslider").val(); // read from settign on page -- this feels a bit hacky
@@ -2133,6 +2148,9 @@ function generate_team() {
 	team.logo = new Image();
 	team.logo.src = "logos/" + team.name + ".png";
 
+	team.history = []; // array of per-game score totals
+	team.career = get_new_scores(); // career totals for team
+
 	team.played = 0; // total games played
 	team.won = 0; 	// games won
 	team.lost = 0; 	// games lost
@@ -2203,15 +2221,17 @@ function initiate_random_game() {
 	for(var i = 0; i < teams.left.roster.length; i++) {
 		teams.left.roster[i].team = teams.left;
 		teams.left.roster[i].played++; // have played another game of football!
+		teams.left.roster[i].scores = get_new_scores(); // reset their scores for the new game
 		players.push(teams.left.roster[i]);
 	}
 	for(var i = 0; i < teams.right.roster.length; i++) {
 		teams.right.roster[i].team = teams.right;
 		teams.right.roster[i].played++;
+		teams.right.roster[i].scores = get_new_scores();
 		players.push(teams.right.roster[i]);
 	}
 
-	reset_scores();
+	reset_scores();	// TODO players vs. teams -- should that all be consolidated, probably?
 	reset_playcalls();
 	reset_gameclock();
 	reset_playclock();
@@ -2250,29 +2270,46 @@ function generate_players(size, team) {
 	return pl;
 }
 
+// return a new, zeroed-out scorekeeping object
+function get_new_scores() {
+	var s = new Object();
+	s.points = 0;
+	s.yards = 0;
+	s.tackles = 0;
+	s.sacks = 0;
+	s.touchdowns = 0;
+	s.safeties = 0;
+
+	return s;
+}
+
+// given a scores object, return a new scores object with identical values
+function copy_scores(scores) {
+	var s = get_new_scores();
+	for(var k in scores) {
+		s[k] = scores[k];
+	}
+
+	return s;
+}
+
+// given two scores objects, returns new object that sums each of the stats
+function sum_scores(s1, s2) {
+	var t = get_new_scores();
+	for(var k in s1) {
+		t[k] = s1[k] + s2[k];
+	}
+
+	return t;
+}
+
+
 // TODO establish a general template of an object for handling instances of sets-of-scores, to facilitate
 //	easily keeping lists of player- and team-specific stats over the history of games in the league.
 // reset current game team scores to zero
 function reset_scores() {
-
-	var ls = new Object();
-	ls.points = 0;
-	ls.yards = 0;
-	ls.tackles = 0;
-	ls.sacks = 0;
-	ls.touchdowns = 0;
-	ls.safeties = 0;
-	teams.left.scores = ls;
-
-	var rs = new Object();
-	rs.points = 0;
-	rs.yards = 0;
-	rs.tackles = 0;
-	rs.sacks = 0;
-	rs.touchdowns = 0;
-	rs.safeties = 0;
-	teams.right.scores = rs;	
-
+	teams.left.scores = get_new_scores();
+	teams.right.scores = get_new_scores();
 }
 
 // reset next down object to game-initial values
