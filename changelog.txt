@@ -1,5 +1,8 @@
 changelog
 
+04/26/2015
+- added historical game-by-game scorekeeping (.history) and cumulative all-games-played totals (.career) to team and player objects, to make it possible to do more detailed tracking of statistics over time.
+
 04/23/2015
 - partial fix to IE11 problem; game will now run for anyone stuck with this browser, but control sliders need to be changed once after page load to actually correctly provide the game with a value.
 

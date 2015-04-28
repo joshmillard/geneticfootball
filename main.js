@@ -806,6 +806,7 @@ function draw_canvas() {
 	draw_WLT();
 	draw_readout();
 	draw_featured_player(ballcarrier);
+//	draw_career(ballcarrier);
 	context.restore();
 
 	context.restore();
@@ -2303,6 +2304,147 @@ function sum_scores(s1, s2) {
 	return t;
 }
 
+/* part of the deal here is it'd make sense to create a generic draw_graph() function that operates
+	blindly on some generic paramters: an array of data points and an axis label or two.  Then iterate
+	through the data points to find the min and max values and use that to scale y axis; count the 
+	number of data points to establish spacing between points along the x axis; and barf out a labeled
+	graph with axes lines that fits some target rectangle regardless of the range of numbers.  For a single
+	line on the graph, this should be pretty easy; multiple different data points with different scales would
+	get to be a bigger issue.
+*/
+// experimentally draw some career graphs on a canvas
+function draw_career(p) {
+/*	var y = [];
+	var stat = "points";
+	for(var i = 0; i < p.history.length; i++) {
+		y.push(p.history[i][stat]);
+	}
+*/
+	var x = 530;
+	var y = 500;
+	var dy = 50;
+
+	var stats = ["points", "yards", "touchdowns", "safeties", "tackles", "sacks"];
+
+	for(var i = 0; i < stats.length; i++) {
+		var stat = stats[i];
+		var data = fetch_stat(p, stat, true);
+		graph_array(x, y + i*dy, data, stat);
+	}
+}
+
+function fetch_stat(p, stat, cumul) {
+	var y = [];
+	var total = 0;
+	// TODO should sanity check for a valid stat...
+	for(var i = 0; i < p.history.length; i++) {
+		if(cumul) {
+			// each new cell is a cumumlative total for all previous scores
+			total += p.history[i][stat];
+			y.push(total);
+		}
+		else {
+			// each new cell is just the per-game value of this stat
+			y.push(p.history[i][stat]);
+		}
+	}
+	return y;
+}
+
+function graph_array(x, y, arr, label) {
+//	var x = 400;
+//	var y = 400;
+
+	var framew = 400;
+	var frameh = 300;
+	
+	var graphw = 150;
+	var graphh = 40;
+	var graphx = x + 75;
+	var graphy = y;
+
+	var labely = graphy + (graphh / 2);
+
+	var dx = graphw / arr.length; // per-unit x step
+
+	var low = 0;
+	var high = 0;
+	for(var i = 0; i < arr.length; i++) {
+		if(arr[i] > high) { 
+			high = arr[i]; 
+		}
+		else if(arr[i] < low) {
+			low = arr[i];
+		}
+	}
+	var dy = graphh / (high - low);	// per-unit y step
+	var zero = graphh * ( high / (high - low) ); // y position of the graph's zero line
+
+	context.fillStyle = "#ffffff";
+//	context.fillRect(x, y, framew, frameh);
+//	context.fillRect(x, y, graphw + 100, graphh);
+
+	context.fillStyle = "#000000";
+	context.font = "12px Courier";
+	context.fillText(label, x, labely);
+
+	context.strokeStyle = "#000000";
+	// draw y-axis
+	context.beginPath();
+	context.moveTo(graphx, graphy);
+	context.lineTo(graphx, graphy + graphh);
+	context.stroke();
+	// draw x-axis
+	context.beginPath();
+	context.moveTo(graphx, graphy + zero);
+	context.lineTo(graphx + graphw, graphy + zero);
+	context.stroke();
+	// label y-axis
+	if(high != 0) {
+		context.fillStyle = "#000000";
+		context.fillText(high, graphx - 30, graphy + 6);
+		context.beginPath();
+		context.moveTo(graphx, graphy);
+		context.lineTo(graphx - 10, graphy);
+		context.stroke();
+	}
+
+	context.fillStyle = "#000000";
+	context.fillText("0", graphx - 20, graphy + zero + 6);
+	context.beginPath();
+	context.moveTo(graphx, graphy + zero);
+	context.lineTo(graphx - 10, graphy + zero);
+	context.stroke();
+
+	if(low != 0) {
+		context.fillStyle = "#000000";
+		context.fillText(low, graphx - 30, graphy + graphh + 6);
+		context.beginPath();
+		context.moveTo(graphx, graphy + graphh);
+		context.lineTo(graphx - 10, graphy + graphh);
+		context.stroke();
+	}
+
+
+	context.strokeStyle = "#ff0000";
+	var prevy = 0;
+	var prevx = 0;
+	for(var i = 0; i < arr.length; i++) {
+		var px = graphx + dx*i;
+		var py = graphy + zero - arr[i]*dy;
+//		context.fillRect(px - 1, py - 1, 3, 3)
+		if(i != 0) {
+			context.beginPath();
+			context.moveTo(prevx, prevy);
+			context.lineTo(px, py);
+			context.stroke();
+		}
+		prevy = py;
+		prevx = px;
+	}
+
+
+}
 
 // TODO establish a general template of an object for handling instances of sets-of-scores, to facilitate
 //	easily keeping lists of player- and team-specific stats over the history of games in the league.
