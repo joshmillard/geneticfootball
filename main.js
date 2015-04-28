@@ -143,6 +143,8 @@ var timer = 0;
 var lastframe = Date.now();	// time-between-frame tracking variable
 var theloop; // = setInterval( gameloop, framelimit );
 
+var handoffs_permitted = false;
+
 
 // relatively gender-neutral first names
 var androgynous = "Adrian Alex Andy Ash Aubrey Avery Bailey Bernie Blaine Blair Bobbie Brett Brook Cameron Campbell Carey \
@@ -1562,6 +1564,30 @@ function handle_collision(p1, p2) {
 					// just a tackle
 					end_of_down("tackle", actor);
 				}
+			}
+		}
+		// experiment: random handoffs?
+		//  TODO add some small cooldown, maybe just a half a game second, triggered by a handoff, so that the ball can't
+		//		instantly chain-reaction through 3+ players in contact, seeming to jump between two non-adjacent players via middlemen
+		else if(p1.team == p2.team && (p1 == ballcarrier || p2 == ballcarrier)) {
+			var from;
+			var to;
+			if(p1 == ballcarrier) {
+				from = p1;
+				to = p2;
+			}
+			else {
+				from = p2;
+				to = p1;
+			}
+			var dx = to.x - from.x; // relative position of players on the field
+			if(from.team == teams.right) {
+				dx *= -1;	// reverse that value if this is the right-side team since smaller x is farther forward for them
+			}
+			if(dx > 0 && handoffs_permitted) {
+				// we'll do a handoff if the current ballcarrier is farther back than the potential handoff recipient
+		//		console.log("handoff from " + from.lastname + " to " + to.lastname + "!");
+				ballcarrier = to;
 			}
 		}
 	}

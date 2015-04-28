@@ -1,5 +1,8 @@
 changelog
 
+04/28/2015
+- added secret experimental handoff code; off by default, but can be enabled at the JS console by assigning handoffs_permitted = true.  Ball carrier will hand the ball forward to a friendly player they come in contact with if that player is closer to goal than they are.
+
 04/26/2015
 - added historical game-by-game scorekeeping (.history) and cumulative all-games-played totals (.career) to team and player objects, to make it possible to do more detailed tracking of statistics over time.
 
